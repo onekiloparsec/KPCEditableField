@@ -20,10 +20,16 @@ public extension CGSize {
     }
 }
 
-public typealias EditableSource = () -> String
+public typealias EditableTextSource = () -> String
+public typealias EditableOptionsSource = () -> (selectedValue: String, options: [String])
 
 open class EditableField: NSTextField {
-    public var editable_text: EditableSource?
+    public var editable_text: EditableTextSource? {
+        didSet { if self.editable_text != nil { self.editable_options = nil } }
+    }
+    public var editable_options: EditableOptionsSource? {
+        didSet { if self.editable_options != nil { self.editable_text = nil } }
+    }
 
     var reallyAcceptsFirstResponder: Bool = false
     override open var acceptsFirstResponder: Bool {
@@ -31,7 +37,7 @@ open class EditableField: NSTextField {
     }
 
     override open var isEditable: Bool {
-        get { return self.editable_text != nil }
+        get { return self.editable_text != nil || self.editable_options != nil }
         set {}
     }
     
@@ -57,20 +63,38 @@ open class EditableField: NSTextField {
     }
     
     override open func becomeFirstResponder() -> Bool {
-        // NSNotification...
-        
-        self.setFrameOrigin(self.bezeledOrigin)
-        self.setFrameSize(self.bezeledSize)
-        
-        self.drawsBackground = true
-        self.isBezeled = true
-        self.display()
+        if self.editable_text != nil {
+            self.setFrameOrigin(self.bezeledOrigin)
+            self.setFrameSize(self.bezeledSize)
+            
+            self.drawsBackground = true
+            self.isBezeled = true
+            self.display()
+        }
+        else if let (selectedTitle, titles) = self.editable_options?() {
+            let popup = NSPopUpButton(frame: self.frame.insetBy(dx: -4.0, dy: -4.0))
+            popup.addItems(withTitles: titles)
+            popup.title = selectedTitle
+            popup.selectItem(withTitle: selectedTitle)
+            self.superview?.addSubview(popup)
+            let popcell = popup.cell as! NSPopUpButtonCell
+            popcell.performClick(withFrame: self.frame, in: self.superview!)
+            
+//            popup.menu?.popUp(positioning: popup.selectedItem,
+//                             at: NSMakePoint(NSMidX(popup.frame), NSMaxY(popup.frame)),
+//                             in: self.superview)
+        }
         
         return true
     }
 
     open override func draw(_ dirtyRect: NSRect) {
         if let string = self.editable_text?() {
+            let nsstring = string as NSString
+            let attributes = self.attributedStringValue.attributes(at: 0, effectiveRange: nil)
+            nsstring.draw(in: self.bounds, withAttributes: attributes)
+        }
+        else if let (string, titles) = self.editable_options?() {
             let nsstring = string as NSString
             let attributes = self.attributedStringValue.attributes(at: 0, effectiveRange: nil)
             nsstring.draw(in: self.bounds, withAttributes: attributes)
