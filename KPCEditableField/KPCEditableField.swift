@@ -69,5 +69,11 @@ open class EditableField: NSTextField {
         return true
     }
 
-
+    open override func draw(_ dirtyRect: NSRect) {
+        if let string = self.editable_text?() {
+            let nsstring = string as NSString
+            let attributes = self.attributedStringValue.attributes(at: 0, effectiveRange: nil)
+            nsstring.draw(in: self.bounds, withAttributes: attributes)
+        }
+    }
 }
