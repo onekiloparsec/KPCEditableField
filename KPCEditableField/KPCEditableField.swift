@@ -21,15 +21,35 @@ public extension CGSize {
 }
 
 public typealias EditableTextSource = () -> String
-public typealias EditableOptionsSource = () -> (selectedValue: String, options: [String])
+public typealias EditableOptionsSource = () -> (selectedIndex: Int, options: [String])
+
+public enum EditableSource {
+    case text(EditableTextSource)
+    case options(EditableOptionsSource)
+    
+    public var stringValue: String {
+        get {
+            switch self {
+            case .text(let source):
+                return source()
+            case .options(let source):
+                let (selectedIndex, titles) = source()
+                if selectedIndex >= 0 && selectedIndex < titles.count {
+                    return titles[selectedIndex]
+                }
+                return ""
+            }
+        }
+    }
+}
+
 
 open class EditableField: NSTextField {
-    public var editable_text: EditableTextSource? {
-        didSet { if self.editable_text != nil { self.editable_options = nil } }
-    }
-    public var editable_options: EditableOptionsSource? {
-        didSet { if self.editable_options != nil { self.editable_text = nil } }
-    }
+    public var showValidationButtons: Bool = true
+    private var okButton: NSButton?
+    private var cancelButton: NSButton?
+    
+    public var editable_source: EditableSource? 
 
     var reallyAcceptsFirstResponder: Bool = false
     override open var acceptsFirstResponder: Bool {
@@ -37,7 +57,7 @@ open class EditableField: NSTextField {
     }
 
     override open var isEditable: Bool {
-        get { return self.editable_text != nil || self.editable_options != nil }
+        get { return self.editable_source != nil }
         set {}
     }
     
@@ -63,41 +83,66 @@ open class EditableField: NSTextField {
     }
     
     override open func becomeFirstResponder() -> Bool {
-        if self.editable_text != nil {
+        guard let source = self.editable_source else {
+            return super.becomeFirstResponder()
+        }
+        
+        switch source {
+        case .text(_):
             self.setFrameOrigin(self.bezeledOrigin)
             self.setFrameSize(self.bezeledSize)
-            
             self.drawsBackground = true
             self.isBezeled = true
             self.display()
-        }
-        else if let (selectedTitle, titles) = self.editable_options?() {
-            let popup = NSPopUpButton(frame: self.frame.insetBy(dx: -4.0, dy: -4.0))
+            
+        case .options(let options_source):
+            let (selectedIndex, titles) = options_source()
+            let popup = NSPopUpButton(frame: self.titleFrame.insetBy(dx: -20.0, dy: -4.0).offsetBy(dx: 15.0, dy: 0.0))
             popup.addItems(withTitles: titles)
-            popup.title = selectedTitle
-            popup.selectItem(withTitle: selectedTitle)
+            if selectedIndex >= 0 && selectedIndex < titles.count {
+                popup.title = titles[selectedIndex]
+                popup.selectItem(withTitle: titles[selectedIndex])
+            }
             self.superview?.addSubview(popup)
             let popcell = popup.cell as! NSPopUpButtonCell
-            popcell.performClick(withFrame: self.frame, in: self.superview!)
-            
-//            popup.menu?.popUp(positioning: popup.selectedItem,
-//                             at: NSMakePoint(NSMidX(popup.frame), NSMaxY(popup.frame)),
-//                             in: self.superview)
+            popcell.performClick(withFrame: popup.frame, in: self.superview!)
         }
         
         return true
     }
+    
+    private var titleBounds: CGRect {
+        get {
+            guard let attrString = self.editableAttributedStringValue else { return CGRect.zero }
+            var rect = self.bounds
+            rect.size = attrString.size()
+            return rect
+        }
+    }
+
+    private var titleFrame: CGRect {
+        get {
+            guard let attrString = self.editableAttributedStringValue else { return CGRect.zero }
+            var rect = self.frame
+            rect.size = attrString.size()
+            return rect
+        }
+    }
+
+    public var editableAttributedStringValue: NSAttributedString? {
+        get {
+            guard let source = self.editable_source else { return nil }
+            let attributes = self.attributedStringValue.attributes(at: 0, effectiveRange: nil)
+            return NSAttributedString(string: source.stringValue, attributes: attributes)
+        }
+    }
 
     open override func draw(_ dirtyRect: NSRect) {
-        if let string = self.editable_text?() {
-            let nsstring = string as NSString
-            let attributes = self.attributedStringValue.attributes(at: 0, effectiveRange: nil)
-            nsstring.draw(in: self.bounds, withAttributes: attributes)
+        guard let attrString = self.editableAttributedStringValue else {
+            super.draw(dirtyRect)
+            return
         }
-        else if let (string, titles) = self.editable_options?() {
-            let nsstring = string as NSString
-            let attributes = self.attributedStringValue.attributes(at: 0, effectiveRange: nil)
-            nsstring.draw(in: self.bounds, withAttributes: attributes)
-        }
+
+        attrString.draw(in: self.titleBounds)
     }
 }
