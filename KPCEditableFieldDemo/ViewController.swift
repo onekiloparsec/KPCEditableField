@@ -17,10 +17,8 @@ class ViewController: NSViewController {
     override func viewDidLoad() {
         super.viewDidLoad()
 
-        self.editableTextField.editable_text = { return "model.name" }
-        self.editableOptions.editable_options = {
-            return ("title1", ["title0", "title1", "title2"])
-        }
+        self.editableTextField.editable_source = .text({ return "source: text" })
+        self.editableOptions.editable_source = .options({ return (1, ["title0", "title1", "title2"]) })
     }
 
 
