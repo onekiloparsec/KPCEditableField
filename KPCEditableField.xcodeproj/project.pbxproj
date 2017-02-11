@@ -15,6 +15,9 @@
 		9F34DB831E4E6399003C4B78 /* KPCEditableField.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9F34DB821E4E6399003C4B78 /* KPCEditableField.swift */; };
 		9F34DB841E4E659E003C4B78 /* KPCEditableField.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 9F34DB641E4E62EE003C4B78 /* KPCEditableField.framework */; };
 		9F34DB851E4E659E003C4B78 /* KPCEditableField.framework in Embed Frameworks */ = {isa = PBXBuildFile; fileRef = 9F34DB641E4E62EE003C4B78 /* KPCEditableField.framework */; settings = {ATTRIBUTES = (CodeSignOnCopy, RemoveHeadersOnCopy, ); }; };
+		9FBFE6CF1E4F20D300C83AE1 /* cancel.png in Resources */ = {isa = PBXBuildFile; fileRef = 9FBFE6CC1E4F20D300C83AE1 /* cancel.png */; };
+		9FBFE6D01E4F20D300C83AE1 /* check.png in Resources */ = {isa = PBXBuildFile; fileRef = 9FBFE6CD1E4F20D300C83AE1 /* check.png */; };
+		9FBFE6D11E4F20D300C83AE1 /* pencil.png in Resources */ = {isa = PBXBuildFile; fileRef = 9FBFE6CE1E4F20D300C83AE1 /* pencil.png */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -52,6 +55,9 @@
 		9F34DB7C1E4E637D003C4B78 /* Base */ = {isa = PBXFileReference; lastKnownFileType = file.storyboard; name = Base; path = Base.lproj/Main.storyboard; sourceTree = "<group>"; };
 		9F34DB7E1E4E637D003C4B78 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
 		9F34DB821E4E6399003C4B78 /* KPCEditableField.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = KPCEditableField.swift; sourceTree = "<group>"; };
+		9FBFE6CC1E4F20D300C83AE1 /* cancel.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = cancel.png; sourceTree = "<group>"; };
+		9FBFE6CD1E4F20D300C83AE1 /* check.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = check.png; sourceTree = "<group>"; };
+		9FBFE6CE1E4F20D300C83AE1 /* pencil.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = pencil.png; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -77,6 +83,7 @@
 			isa = PBXGroup;
 			children = (
 				9F34DB661E4E62EE003C4B78 /* KPCEditableField */,
+				9FBFE6B71E4F1C8800C83AE1 /* Resources */,
 				9F34DB741E4E637D003C4B78 /* KPCEditableFieldDemo */,
 				9F34DB651E4E62EE003C4B78 /* Products */,
 			);
@@ -111,6 +118,17 @@
 				9F34DB7E1E4E637D003C4B78 /* Info.plist */,
 			);
 			path = KPCEditableFieldDemo;
+			sourceTree = "<group>";
+		};
+		9FBFE6B71E4F1C8800C83AE1 /* Resources */ = {
+			isa = PBXGroup;
+			children = (
+				9FBFE6CC1E4F20D300C83AE1 /* cancel.png */,
+				9FBFE6CD1E4F20D300C83AE1 /* check.png */,
+				9FBFE6CE1E4F20D300C83AE1 /* pencil.png */,
+			);
+			name = Resources;
+			path = KPCEditableField;
 			sourceTree = "<group>";
 		};
 /* End PBXGroup section */
@@ -211,6 +229,9 @@
 			isa = PBXResourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				9FBFE6D11E4F20D300C83AE1 /* pencil.png in Resources */,
+				9FBFE6D01E4F20D300C83AE1 /* check.png in Resources */,
+				9FBFE6CF1E4F20D300C83AE1 /* cancel.png in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -464,6 +485,7 @@
 				9F34DB801E4E637D003C4B78 /* Release */,
 			);
 			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
 		};
 /* End XCConfigurationList section */
 	};
