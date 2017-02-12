@@ -8,15 +8,15 @@
 
 import AppKit
 
-public extension CGPoint {
-    public func offsetBy(dx: CGFloat, dy: CGFloat) -> CGPoint {
-        return CGPoint(x: self.x + dx, y: self.y + dy)
+public extension NSPoint {
+    public func offsetBy(dx: CGFloat, dy: CGFloat) -> NSPoint {
+        return NSPoint(x: self.x + dx, y: self.y + dy)
     }
 }
 
-public extension CGSize {
-    public func extendedBy(dw: CGFloat, dh: CGFloat) -> CGSize {
-        return CGSize(width: self.width + dw, height: self.height + dh)
+public extension NSSize {
+    public func extendedBy(dw: CGFloat, dh: CGFloat) -> NSSize {
+        return NSSize(width: self.width + dw, height: self.height + dh)
     }
 }
 
