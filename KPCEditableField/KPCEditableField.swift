@@ -80,14 +80,20 @@ extension NSButton {
 }
 
 
-open class EditableField: NSTextField {
+open class EditableField: NSTextField, NSTextDelegate {
+    private weak var auxiliaryView: NSView?
+
     private var okButton: NSButton?
     private var cancelButton: NSButton?
     private var editButton: NSButton?
     private var editableTrackingArea: NSTrackingArea?
+    
+    private var originalFrame: NSRect?
 
     public var showValidationButtons: Bool = true
-    public var editable_source: EditableSource? 
+    public var editable_source: EditableSource? {
+        didSet { self.stringValue = self.editable_source?.stringValue ?? "" }
+    }
     public private(set) var isEditing: Bool = false
 
     var reallyAcceptsFirstResponder: Bool = false
@@ -95,36 +101,39 @@ open class EditableField: NSTextField {
         get { return self.reallyAcceptsFirstResponder }
     }
 
-    override open var isEditable: Bool {
-        get { return self.editable_source != nil }
-        set {}
-    }
-    
-    open var bezeledOrigin: CGPoint {
-        get { return self.frame.origin.offsetBy(dx: 3.0, dy: 0.0) }
+//    override open var isEditable: Bool {
+//        get { return self.editable_source != nil }
+//        set {}
+//    }
+
+    open var bezeledFrame: NSRect {
+        get { return self.originalFrame!.offsetBy(dx: -2.0, dy: -1.0).insetBy(dx: 0.0, dy: -4.0) }
     }
 
-    open var bezeledSize: CGSize {
-        get { return self.frame.size.extendedBy(dw: 0.0, dh: 4.0) }
-    }
+//    open var bezeledOrigin: NSPoint {
+//        get { return self.originalFrame!.origin.offsetBy(dx: -2.0, dy: -2.0) }
+//    }
+//
+//    open var bezeledSize: NSSize {
+//        get { return self.originalFrame!.size.extendedBy(dw: 0.0, dh: 5.0) }
+//    }
     
     override open func viewDidMoveToWindow() {
-        self.backgroundColor = NSColor.white
-        self.isBezeled = false
-        self.drawsBackground = false
+        self.originalFrame = self.frame
+        self.setupAsLabel()
         
-        self.okButton = NSButton.editableButton(type: .check, target: self, action: nil)
-        self.okButton?.frame.origin = CGPoint(x: NSMaxX(self.titleFrame)+2.0, y: NSMinY(self.titleFrame)-2.0)
-        
-        self.cancelButton = NSButton.editableButton(type: .cancel, target: self, action: #selector(EditableField.cancelEditingField))
-        self.cancelButton?.frame.origin = CGPoint(x: NSMaxX(self.okButton!.frame)+2.0, y: NSMinY(self.okButton!.frame))
-        
-        self.editButton = NSButton.editableButton(type: .pencil, target: self, action: #selector(EditableField.editField))
-        self.editButton?.frame = self.okButton!.frame
-        
-        self.superview?.addSubview(self.okButton!)
-        self.superview?.addSubview(self.cancelButton!)
-        self.superview?.addSubview(self.editButton!)
+//        self.okButton = NSButton.editableButton(type: .check, target: self, action: nil)
+//        self.okButton?.frame.origin = CGPoint(x: NSMaxX(self.titleFrame)+2.0, y: NSMinY(self.titleFrame)-2.0)
+//        
+//        self.cancelButton = NSButton.editableButton(type: .cancel, target: self, action: #selector(EditableField.cancelEditingField))
+//        self.cancelButton?.frame.origin = CGPoint(x: NSMaxX(self.okButton!.frame)+2.0, y: NSMinY(self.okButton!.frame))
+//        
+//        self.editButton = NSButton.editableButton(type: .pencil, target: self, action: #selector(EditableField.editField))
+//        self.editButton?.frame = self.okButton!.frame
+//        
+//        self.superview?.addSubview(self.okButton!)
+//        self.superview?.addSubview(self.cancelButton!)
+//        self.superview?.addSubview(self.editButton!)
     }
     
     override open func updateTrackingAreas() {
@@ -133,14 +142,14 @@ open class EditableField: NSTextField {
         if self.editableTrackingArea != nil {
             self.removeTrackingArea(self.editableTrackingArea!)
         }
-        
+                
         self.editableTrackingArea = NSTrackingArea(rect: self.titleBounds,
                                                    options: [.mouseEnteredAndExited, .activeInActiveApp, .inVisibleRect],
                                                    owner: self,
                                                    userInfo: nil)
         
         self.addTrackingArea(self.editableTrackingArea!)
-
+        
         if let w = self.window, let e = NSApp.currentEvent {
             let mouseLocation = w.mouseLocationOutsideOfEventStream
             let convertedMouseLocation = self.convert(mouseLocation, from: nil)
@@ -156,45 +165,94 @@ open class EditableField: NSTextField {
     
     open override func mouseEntered(with theEvent: NSEvent) {
         super.mouseEntered(with: theEvent)
-        self.editButton?.isHidden = self.isEditing
+        if self.editable_source != nil {
+            self.editButton?.isHidden = self.isEditing
+            self.startEditing()
+        }
     }
     
     open override func mouseExited(with theEvent: NSEvent) {
         super.mouseExited(with: theEvent)
-        self.editButton?.isHidden = true
+        if self.editable_source != nil {
+            self.editButton?.isHidden = true
+            if case .text = self.editable_source! {} // Do not cancel editing when .text case
+            else { self.stopEditing() }
+        }
     }
 
     override open func mouseDown(with event: NSEvent) {
-        if self.isEditable {
-            self.reallyAcceptsFirstResponder = true
-            super.mouseDown(with: event)
+        super.mouseDown(with: event)
+        if self.editable_source != nil {
+            self.startEditing()
         }
     }
     
-    override open func becomeFirstResponder() -> Bool {
+    func setupAsLabel() {
+        self.frame = self.originalFrame!
+        self.drawsBackground = false
+        self.isBezeled = false
+        
+        self.reallyAcceptsFirstResponder = false
+        self.window?.resignFirstResponder()
+        
+        guard let fieldEditor = self.window?.fieldEditor(true, for: self) else { return }
+        self.endEditing(fieldEditor)
+    }
+
+    func setupAsTextField() {
+        guard let fieldEditor = self.window?.fieldEditor(true, for: self) else { return }
+
+        self.reallyAcceptsFirstResponder = true
+        self.window?.makeFirstResponder(self)
+
+        self.frame = self.bezeledFrame
+        self.drawsBackground = true
+        self.isBezeled = true
+        
+        self.cell?.select(withFrame: self.bounds,
+                          in: self,
+                          editor: fieldEditor,
+                          delegate: nil,
+                          start: 0,
+                          length: 0)
+        
+        fieldEditor.drawsBackground = false
+        fieldEditor.isHorizontallyResizable = true
+        fieldEditor.isEditable = true
+        
+//        let editorSettings = self.style.titleEditorSettings()
+//        fieldEditor.font = editorSettings.font
+//        fieldEditor.alignment = editorSettings.alignment
+//        fieldEditor.textColor = editorSettings.textColor
+        
+        // Replace content so that resizing is triggered
+        fieldEditor.string = ""
+        fieldEditor.insertText(self.editable_source!.stringValue)
+        fieldEditor.selectAll(self)
+    }
+
+    
+    @objc func startEditing() {
         guard let source = self.editable_source else {
-            return super.becomeFirstResponder()
+            return
         }
         
         switch source {
         case .text(_):
-            self.setFrameOrigin(self.bezeledOrigin)
-            self.setFrameSize(self.bezeledSize)
-            self.drawsBackground = true
-            self.isBezeled = true
-            self.display()
+            self.setupAsTextField()
             
         case .options(let options_source):
             let (selectedIndex, titles) = options_source()
-            let popup = NSPopUpButton(frame: self.titleFrame.insetBy(dx: -20.0, dy: -4.0).offsetBy(dx: 15.0, dy: 0.0))
+            let popup = NSPopUpButton(frame: self.titleFrame.insetBy(dx: -20.0, dy: -4.0).offsetBy(dx: 10.0, dy: -2.0))
             popup.addItems(withTitles: titles)
             if selectedIndex >= 0 && selectedIndex < titles.count {
                 popup.title = titles[selectedIndex]
                 popup.selectItem(withTitle: titles[selectedIndex])
             }
+            self.auxiliaryView = popup
             self.superview?.addSubview(popup)
-            let popcell = popup.cell as! NSPopUpButtonCell
-            popcell.performClick(withFrame: popup.frame, in: self.superview!)
+//            let popcell = popup.cell as! NSPopUpButtonCell
+//            popcell.performClick(withFrame: popup.frame, in: self.superview!)
         }
         
         self.editButton?.isHidden = true
@@ -202,24 +260,19 @@ open class EditableField: NSTextField {
         self.cancelButton?.isHidden = false
         
         self.isEditing = true
-        return true
     }
-    
-    override open func resignFirstResponder() -> Bool {
-        guard self.editable_source != nil else {
-            return super.resignFirstResponder()
+
+    @objc func stopEditing() {
+        guard let source = self.editable_source else {
+            return
+        }
+        
+        if case .text = source {
+            self.setupAsLabel()
         }
 
+        self.auxiliaryView?.removeFromSuperview()
         self.isEditing = false
-        return true
-    }
-    
-    @objc func editField() {
-        self.window?.makeFirstResponder(self)
-    }
-
-    @objc func cancelEditingField() {
-        self.window?.makeFirstResponder(self.nextResponder)
     }
 
     
@@ -248,15 +301,22 @@ open class EditableField: NSTextField {
             return NSAttributedString(string: source.stringValue, attributes: attributes)
         }
     }
-
-    open override func draw(_ dirtyRect: NSRect) {
-        guard let attrString = self.editableAttributedStringValue else {
-            super.draw(dirtyRect)
+    
+    // MARK : - NSTextDelegate
+    
+    open override func textDidEndEditing(_ notification: Notification) {
+        guard let fieldEditor = notification.object as? NSText else {
+            assertionFailure("Expected field editor.")
             return
         }
-
-        attrString.draw(in: self.titleBounds)
+        
+        let newValue = fieldEditor.string ?? ""
+        // TODO: Send new Value...
+        
+        self.stopEditing()
+        self.window?.resignFirstResponder()
     }
+
 }
 
 
